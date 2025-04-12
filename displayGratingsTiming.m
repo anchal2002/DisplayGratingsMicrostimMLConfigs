@@ -2,7 +2,7 @@
 hotkey('x', 'escape_screen(); assignin(''caller'',''continue_'',false);');  % Stop the task immediately if "x" key is pressed
 set_bgcolor([0.5 0.5 0.5]);                                                 % Sets subject screen background color to Gray
 bhv_variable('Stimuli', TrialRecord.User.Stimuli);                          % Save the current trial stimuli in data.UserVars variable
-bhv_variable('MicroStim', TrialRecord.User.MicroStim);
+bhv_variable('MicrostimChannel', TrialRecord.User.MicrostimChannel);
 
 % Initializing task variables
 if exist('eye_','var'), tracker = eye_;     % detect an available tracker
@@ -102,6 +102,8 @@ sceneISI = create_scene(wth4);
 error_type = 0;
 flag = 0;
 stimulator = TrialRecord.User.Stimulator;
+stimTable = TrialRecord.User.StimTable;
+stimCurrent = TrialRecord.User.Stimuli;
 
 while true
     run_scene(sceneFix);                            % Run the first scene (eventmaker 10)
@@ -110,10 +112,15 @@ while true
     run_scene(sceneHold,10);
     if ~wth2.Success; error_type = 3; break; end    % If the WithThenHold failed (fixation is broken), this is a "break fixation (3)" error.
 
-    for i=1:stim_per_trial-1        
-        if TrialRecord.User.MicroStim(i)
-            stimulate(stimulator);
-        end
+    for i=1:stim_per_trial-1           
+        stimulate(TrialRecord.User.Stimulator,...
+            TrialRecord.User.MicrostimChannel,...
+            1,...                                       % Waveform ID
+            stimTable{stimCurrent(i),"pulses"},...
+            stimTable{stimCurrent(i),"amp"},...
+            stimTable{stimCurrent(i),"frequency"});
+        eventmarker(30);
+
         run_scene(sceneStim{i},20);                     % Run the scene for presenting i'th stimulus (eventmarker 20)
         if ~wth3.Success; error_type = 3; flag=1; break; end    % The failure of WithThenHold indicates that the subject didn't maintain fixation on the stimulus.
         
@@ -126,9 +133,15 @@ while true
     end
     if flag==1; break; end
     
-    if TrialRecord.User.MicroStim(stim_per_trial)         
-        stimulate(stimulator);
-    end    
+    i = stim_per_trial;  
+    stimulate(TrialRecord.User.Stimulator,...
+            TrialRecord.User.MicrostimChannel,...
+            1,...                                       % Waveform ID
+            stimTable{stimCurrent(i),"pulses"},...
+            stimTable{stimCurrent(i),"amp"},...
+            stimTable{stimCurrent(i),"frequency"});
+    eventmarker(30);
+
     run_scene(sceneStim{stim_per_trial},20);                       % Run the scene for presenting last stimulus (eventmarker 20)
     if ~wth3.Success; error_type = 3; break; end    % The failure of WithThenHold indicates that the subject didn't maintain fixation on the stimulus.
     

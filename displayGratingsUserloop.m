@@ -5,6 +5,13 @@ C = [];
 timingfile = 'displayGratingsTiming.m';
 userdefined_trialholder = '';
 
+% Number of total blocks, in case the task is to be quit after an exact
+% number of blocks
+num_blocks = 100;     % Should always be an even number
+if mod(num_blocks,2) == 1
+    error("num_blocks should be an even number")
+end
+
 % define variables to keep track of the stimuli shown/remaining
 persistent stimList                 % List of stimuli left to display in a block
 persistent stimPrev                 % List of stimuli of the current block displayed in the prev trial
@@ -14,8 +21,28 @@ persistent stimBorrow               % List of stimuli of the next block displaye
 persistent stimTable
 persistent stimLength
 persistent blockSum
-persistent microStimCondition
-if isempty(stimTable)
+
+if isempty(stimTable)    
+
+    % Prerequisite variables (HARDCODED):
+    params.RF = ["IN"]; % Receptive Field (RF) conditions, IN/OUT
+    params.azi = 0; % Azimuths (deg), V1_dona = -1.75, V4_dona = -1.35
+    params.ele = 0; % Elevations (deg), V1_dona = -2.5, V4_dona = -0.6
+    params.radii = 1000; % Aperture radii (deg)
+    params.sf = 0.5*(2.^(0:3)); % Spatial Frequencies (SFs) (cpd)
+    params.ori = (0:45:135); % Orientations (deg)
+    params.con = 25*(2.^(0:2)); % Contrasts (%)
+    params.microstim = 1;
+    params.amp = [0, 2, 4, 8, 16];
+    params.pulses = 1;
+    params.frequency = 20;
+
+
+    % Creating the stimulus table:
+    stimTable = create_stimtable(params=params);
+    stimLength = size(stimTable, 1);
+    TrialRecord.User.StimTable = stimTable;
+
     %%
     % Create stimulator object
     stimulator = cerestim96();
@@ -23,7 +50,7 @@ if isempty(stimTable)
     %%
     
     % Scan for devices
-    DeviceList = stimulator.scanForDevices();
+    DeviceList = stimulator.scanForDevices();    
 
     if ~isempty(DeviceList)
     
@@ -33,68 +60,12 @@ if isempty(stimTable)
         % Connect to the stimulator
         stimulator.connect; 
         
-        %%
-        % Program our waveform (stim pattern)
-        stimulator.setStimPattern('waveform',1,...% We can define multiple waveforms and distinguish them by ID
-            'polarity',0,...% 0=CF, 1=AF
-            'pulses',10,...% Number of pulses in stim pattern
-            'amp1',1,...% Amplitude in uA
-            'amp2',1,...% Amplitude in uA
-            'width1',100,...% Width for first phase in us
-            'width2',100,...% Width for second phase in us
-            'interphase',100,...% Time between phases in us
-            'frequency',20);% Frequency determines time between biphasic pulses
-        
-        %%
-        % Create a program sequence using any previously defined waveforms (we only have one)
-        stimulator.beginSequence; % Begin program definition
-            stimulator.autoStim(1, 1); % autoStim(Channel, Waveform ID)            
-        stimulator.endSequence; % End program definition
-        %%
+        TrialRecord.User.MicrostimChannel = 12; % Ch 12 -> elec1-27
         TrialRecord.User.Stimulator = stimulator;
     else
         TrialRecord.User.Stimulator = [];
         disp("No Stimulator Devices conected");
     end
-    % Prerequisite variables (HARDCODED):
-    params.RF = ["IN"]; % Receptive Field (RF) conditions, IN/OUT
-    params.azi = 0; % Azimuths (deg), V1_dona = -1.75, V4_dona = -1.35
-    params.ele = 0; % Elevations (deg), V1_dona = -2.5, V4_dona = -0.6
-    params.radii = 2.^(6); % Aperture radii (deg)
-    params.sf = 0.5*(2.^(0:1)); % Spatial Frequencies (SFs) (cpd)
-    params.ori = (0:45:135); % Orientations (deg)
-    params.con = 25*(2.^(1)); % Contrasts (%)
-
-    % Creating the stimulus table:
-    stimTable = create_stimtable(params=params);
-    stimLength = size(stimTable, 1);
-    TrialRecord.User.StimTable = stimTable;
-
-    % Condition when microstim is required (HARDCODED)
-    cond.sf = 1;
-    cond.ori = 90;
-    cond.con = 50;
-
-    TrialRecord.User.MicroStimCondition = cond;
-
-    % Determine the condition index
-    microStimCondition = 0;
-    condition_names = ["sf"  "ori" "con"];      % Only these for now, will update other params when required
-    for i=1:stimLength
-        match_condition = true;
-        for j=1:size(condition_names,2)
-            if stimTable{i,condition_names(j)} ~= cond.(condition_names(j))
-                match_condition = false;
-                break;
-            end            
-        end
-        
-        if match_condition
-            microStimCondition = i;
-            break;
-        end
-    end
-    
     return
 end
 
@@ -156,9 +127,10 @@ end
 TrialRecord.User.Stimuli = stimCurrent;                     % save the stimuli for the next trial in user variable
 TrialRecord.User.stim_idx = 1;
 
-% Logical array for microstim
-TrialRecord.User.MicroStim = stimCurrent == microStimCondition;
-
 % Set the block number and the condition number of the next trial
-TrialRecord.NextBlock = block;
+if block == num_blocks + 1
+    TrialRecord.NextBlock = -1;     % Exit if the next block number reaches the maximum number of blocks
+else
+    TrialRecord.NextBlock = block;
+end
 TrialRecord.NextCondition = condition;
