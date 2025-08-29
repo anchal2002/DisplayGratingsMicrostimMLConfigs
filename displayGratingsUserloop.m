@@ -25,23 +25,31 @@ persistent blockSum
 if isempty(stimTable)    
 
     % Prerequisite variables (HARDCODED):
+    % Grating parameters
     params.RF = ["IN"]; % Receptive Field (RF) conditions, IN/OUT
     params.azi = 0; % Azimuths (deg), V1_dona = -1.75, V4_dona = -1.35
     params.ele = 0; % Elevations (deg), V1_dona = -2.5, V4_dona = -0.6
     params.radii = 1000; % Aperture radii (deg)
     params.sf = 0.5*(2.^(0:3)); % Spatial Frequencies (SFs) (cpd)
     params.ori = (0:45:135); % Orientations (deg)
-    params.con = 25*(2.^(0:2)); % Contrasts (%)
-    params.microstim = 1;
-    params.amp = [0, 2, 4, 8, 16];
-    params.pulses = 1;
-    params.frequency = 20;
+    params.con = 25*(2.^(1)); % Contrasts (%)
+    
+    % Microstimulation parameters
+    params.amp = 16;   % Current amplitude (uA)
+    params.pulses = 7;  % Number of biphasic pulses
+    params.frequency = [0,20,30,40,50,60,70,80];  % Frequency of biphasic pulses
+    params.duration = 300; % ms; When duration > 0, pulses is determined by frequency
 
 
     % Creating the stimulus table:
     stimTable = create_stimtable(params=params);
     stimLength = size(stimTable, 1);
     TrialRecord.User.StimTable = stimTable;
+    
+    % Define the channel to be stimulated
+    % Ch 12 -> elec1-27
+    % Ch 95 -> elec1-1
+    TrialRecord.User.MicrostimChannel = 95;
 
     %%
     % Create stimulator object
@@ -59,8 +67,7 @@ if isempty(stimTable)
         
         % Connect to the stimulator
         stimulator.connect; 
-        
-        TrialRecord.User.MicrostimChannel = 12; % Ch 12 -> elec1-27
+                
         TrialRecord.User.Stimulator = stimulator;
     else
         TrialRecord.User.Stimulator = [];

@@ -26,10 +26,14 @@ fix_color = [1 1 1];        % [R G B] values between 0 and 1
 fix_window = [3 3];         % rectangle with side angles (in degrees)
 hold_window = fix_window ;  
 
+% microstim controls
+microstim_enable = false;   % if false (or unchecked on the control screen), the task acts like a grating protocol
+
 % Add variables on the Control screen to make on-the-fly changes
 editable('pulse_duration','fix_window','fix_size');
 editable('-color', 'fix_color');
 editable('stim_per_trial','wait_for_fix','hold_fix','stimulus_duration','isi_duration');
+editable('microstim_enable');
 
 % creating useful adapters
 % Graphic adapter for fixation point
@@ -112,14 +116,17 @@ while true
     run_scene(sceneHold,10);
     if ~wth2.Success; error_type = 3; break; end    % If the WithThenHold failed (fixation is broken), this is a "break fixation (3)" error.
 
-    for i=1:stim_per_trial-1           
-        stimulate(TrialRecord.User.Stimulator,...
-            TrialRecord.User.MicrostimChannel,...
-            1,...                                       % Waveform ID
-            stimTable{stimCurrent(i),"pulses"},...
-            stimTable{stimCurrent(i),"amp"},...
-            stimTable{stimCurrent(i),"frequency"});
-        eventmarker(30);
+    for i=1:stim_per_trial-1  
+        if microstim_enable
+            stimulate(TrialRecord.User.Stimulator,...
+                TrialRecord.User.MicrostimChannel,...
+                1,...                                       % Waveform ID
+                stimTable{stimCurrent(i),"pulses"},...
+                stimTable{stimCurrent(i),"amp"},...
+                stimTable{stimCurrent(i),"frequency"},...
+                stimTable{stimCurrent(i),"duration"}); %#ok<UNRCH> 
+            eventmarker(30);
+        end
 
         run_scene(sceneStim{i},20);                     % Run the scene for presenting i'th stimulus (eventmarker 20)
         if ~wth3.Success; error_type = 3; flag=1; break; end    % The failure of WithThenHold indicates that the subject didn't maintain fixation on the stimulus.
@@ -133,14 +140,17 @@ while true
     end
     if flag==1; break; end
     
-    i = stim_per_trial;  
-    stimulate(TrialRecord.User.Stimulator,...
-            TrialRecord.User.MicrostimChannel,...
-            1,...                                       % Waveform ID
-            stimTable{stimCurrent(i),"pulses"},...
-            stimTable{stimCurrent(i),"amp"},...
-            stimTable{stimCurrent(i),"frequency"});
-    eventmarker(30);
+    if microstim_enable
+        i = stim_per_trial;  %#ok<UNRCH> 
+        stimulate(TrialRecord.User.Stimulator,...
+                TrialRecord.User.MicrostimChannel,...
+                1,...                                       % Waveform ID
+                stimTable{stimCurrent(i),"pulses"},...
+                stimTable{stimCurrent(i),"amp"},...
+                stimTable{stimCurrent(i),"frequency"},...
+                stimTable{stimCurrent(i),"duration"});
+        eventmarker(30);
+    end
 
     run_scene(sceneStim{stim_per_trial},20);                       % Run the scene for presenting last stimulus (eventmarker 20)
     if ~wth3.Success; error_type = 3; break; end    % The failure of WithThenHold indicates that the subject didn't maintain fixation on the stimulus.
