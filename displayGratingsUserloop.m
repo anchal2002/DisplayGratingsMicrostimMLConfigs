@@ -2,7 +2,8 @@ function [C,timingfile,userdefined_trialholder] = displayGratingsUserloop(MLConf
 % Adapted from Pai's grating completion protocol
 % default return value
 C = [];
-timingfile = 'displayGratingsTiming.m';
+% timingfile = 'displayGratingsTiming.m';
+timingfile = 'displayGratingsTimingAdapter.m';      % Timing file that uses the Cerestim Adapter
 userdefined_trialholder = '';
 
 % Number of total blocks, in case the task is to be quit after an exact
