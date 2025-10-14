@@ -129,7 +129,7 @@ classdef Cerestim < mladapter  % Cerestim Adapter Class
             obj.Stimulator = [];
         end
 
-        function printToCommand(message)            
+        function printToCommand(obj, message)            
             if obj.verbose
                 if strcmp(message, 'clc')
                     clc; %#ok<UNRCH>
