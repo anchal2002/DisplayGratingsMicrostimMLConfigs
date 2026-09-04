@@ -1,9 +1,7 @@
 function [C,timingfile,userdefined_trialholder] = displayGratingsUserloop(MLConfig,TrialRecord)
-% Adapted from Pai's grating completion protocol
-% default return value
+
 C = [];
-% timingfile = 'displayGratingsTiming.m';
-timingfile = 'displayGratingsTimingAdapter.m';      % Timing file that uses the Cerestim Adapter
+timingfile = 'displayGratingsTiming.m';      % Timing file that uses the Cerestim Adapter
 userdefined_trialholder = '';
 
 % Number of total blocks, in case the task is to be quit after an exact
@@ -18,13 +16,13 @@ persistent stimList                 % List of stimuli left to display in a block
 persistent stimPrev                 % List of stimuli of the current block displayed in the prev trial
 persistent stimBorrow               % List of stimuli of the next block displayed in the prev trial
 
-% Createa table of all stimulus combinations and return timing file if it the very first call
+% Create a table of all stimulus combinations and return timing file if it the very first call
 persistent stimTable
 persistent stimLength
 persistent blockSum
 
-if isempty(stimTable)    
-
+if isempty(stimTable)
+    
     % Prerequisite variables (HARDCODED):
     % Grating parameters
     params.RF = ["IN"]; % Receptive Field (RF) conditions, IN/OUT
@@ -33,30 +31,34 @@ if isempty(stimTable)
     params.radii = 1000; % Aperture radii (deg)
     params.sf = 0.5*(2.^(0:3)); % Spatial Frequencies (SFs) (cpd)
     params.ori = (0:45:135); % Orientations (deg)
-    params.con = [0,25,50,100]; % Contrasts (%)
+    params.con = 25*(2.^(0:2)); % Contrasts (%)
     
+    
+    %part2
     % Microstimulation parameters
-    params.width1 = [540, 720, 1080];%, ];%:50:3000;%240,360,540];% Width of first phase in us 
-    params.width2 = [540, 720, 1080];%50:50:1000;%[240,360,540]; % width of second phase in us
-    params.polarity = [0,1]; %[0,1]; % Polarity of the waveform 
+    %params.config = [0,1,2];
+    params.delay = [-1,-2,0,1,2,3,4,5,8,10,12,20]; %delay between two pulses (ms)
+    params.amp = 16; % Current amplitude (uA) %this initialization doesnt matter because in cerestim.m it will get overwritten at the end of the code
+    %params.pulses = 1;  % Number of biphasic pulses
     params.pulses = 7;  % Number of biphasic pulses
-    params.frequency = 20; %[0,20,30,40,50,60,70,80];  % Frequency of biphasic pulses
-%     params.amplitude1 = 60*180./params.width1;
-%     params.amplitude2 = 60*180./params.width2;
-    params.duration = 300; % ms; When duration > 0, pulses is determined by frequency
-    %params.amplitude = 5:5:50;
-
-
-
+    
+    params.frequency = 20; % Frequency of biphasic pulses
+    %params.duration = 300; % ms; When duration > 0, pulses is determined by frequency
+    params.duration = 0; % ms; When duration > 0, pulses is determined by frequency
+    
+    
     % Creating the stimulus table:
+    %stimTable = create_stimtable(params=params);
     stimTable = create_stimtable(params=params);
+    
     stimLength = size(stimTable, 1);
     TrialRecord.User.StimTable = stimTable;
     
     % Define the channel to be stimulated
     % Ch 12 -> elec1-27
     % Ch 95 -> elec1-1
-    TrialRecord.User.MicrostimChannel = 23;
+    TrialRecord.User.MicrostimChannel = [59 60]; % Manually define
+    
     %%
     % Create stimulator object
     stimulator = cerestim96();
@@ -65,14 +67,16 @@ if isempty(stimTable)
     
     % Scan for devices
     DeviceList = stimulator.scanForDevices();
-    if ~isempty(DeviceList)
+    %DeviceList = [];
     
+    if ~isempty(DeviceList)
+        
         % Select a device to connect to
         stimulator.selectDevice(0);
         
         % Connect to the stimulator
-        stimulator.connect; 
-                
+        stimulator.connect;
+        
         TrialRecord.User.Stimulator = stimulator;
     else
         TrialRecord.User.Stimulator = [];
