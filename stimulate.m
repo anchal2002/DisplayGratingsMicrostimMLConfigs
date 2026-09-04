@@ -23,10 +23,10 @@ function stimulate(stimulator, channel, waveform, pulses, amp, frequency, durati
         stimulator.setStimPattern('waveform',1,...% We can define multiple waveforms and distinguish them by ID
             'polarity',0,...% 0=CF, 1=AF
             'pulses',pulses,...% Number of pulses in stim pattern
-            'amp1',amp,...% Amplitude of first phase in uA
-            'amp2',amp,...% Amplitude of second phase in uA
-            'width1',170,...% Width for first phase in us
-            'width2',170,...% Width for second phase in us
+            'amp1',amp1,...% Amplitude of first phase in uA
+            'amp2',amp2,...% Amplitude of second phase in uA
+            'width1',l1,...% Width for first phase in us
+            'width2',l2,...% Width for second phase in us
             'interphase',60,...% Time between phases in us
             'frequency',frequency);% Frequency determines time between biphasic pulses
         

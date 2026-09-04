@@ -4,11 +4,17 @@ classdef Cerestim < mladapter  % Cerestim Adapter Class
         % User variables (both readable and writable)
         Stimulator = []     % Stimmex cerestim96 stimulator object
         Channel = 1         % Channel to stimulate on
-        Amplitude = []      % Array of amplitudes (uA) for the current trial
+        Polarity = []
+        %Amplitude = []      % Array of amplitudes (uA) for the current trial
         Frequency = []      % Array of frequency (Hz) for the current trial
         Pulses = []         % Array of no. of pulses for the current trial
         Duration = []       % Array of duration (ms) for the current trial
-        verbose = 0         % Verbosity during running of trial (1: display during the start of the trial)
+        Width1 = []         % Array of widths (us) for the first phase 
+        Width2 = []         % Array of widths (us) for the second phase
+%         Amplitude1 = []
+%         Amplitude2 = []
+        
+        verbose = 1         % Verbosity during running of trial (1: display during the start of the trial)
     end
     properties (SetAccess = protected)
         % Output variables (only readable)
@@ -27,10 +33,15 @@ classdef Cerestim < mladapter  % Cerestim Adapter Class
             % Assign values to user variables
             obj.Stimulator = varargin{2};
             obj.Channel = varargin{3};
-            obj.Amplitude = varargin{4};
+            %obj.Amplitude = varargin{10};
+            obj.Polarity = varargin{4};
             obj.Frequency = varargin{5};
             obj.Pulses = varargin{6};            
             obj.Duration = varargin{7};
+            obj.Width1 = varargin{8};
+            obj.Width2 = varargin{9};
+%             obj.Amplitude1 = varargin{10};
+%             obj.Amplitude2 = varargin{11};
 
             obj.setPatterns();
             
@@ -84,20 +95,48 @@ classdef Cerestim < mladapter  % Cerestim Adapter Class
             % This function sets the waveform patterns for all stimuli of
             % the current trial. Call this function after setting the
             % required user variables.
-            totalStim = length(obj.Amplitude);
+            totalStim = length(obj.Frequency);
+%            disp(obj.Width1)
+%            disp(obj.Width2)
+%            disp(obj.Amplitude1)
+%            disp(obj.Amplitude2)
+
+% for i=1:totalStim
+%                     width1 = obj.Width1(i);
+%                     width2 = obj.Width2(i);
+%                     amplitude1 = 60*180./obj.Width1(i);
+%                     amplitude2 = 60*180./obj.Width2(i);
+                   
+%                     disp(obj.Width1)
+%                     disp(obj.Width1)
+%                   
+%                     disp(amplitude1)
+% end 
+
             if ~isempty(obj.Stimulator)
-                obj.printToCommand('clc');
+%                 obj.printToCommand('clc');
                 for i=1:totalStim
-                    amp = obj.Amplitude(i);
+                    %amp = obj.Amplitude(i);
+                    polarity = obj.Polarity(i);
                     pulses = obj.Pulses(i);
                     frequency = obj.Frequency(i);
-                    duration = obj.Duration(i);                    
-                    obj.printToCommand("Microstimulation(I=" + amp...
-                            + ", n=" + pulses + ...
+                    duration = obj.Duration(i);
+                    width1 = obj.Width1(i);
+                    width2 = obj.Width2(i);
+                    amplitude1 = 30*360./width1;
+                    amplitude2 = 30*360./width2;
+                   
+%                     disp(amplitude1)
+%                     disp(amplitude2)
+%                     disp(width1)
+%                     disp(width2)
+
+                    obj.printToCommand("Microstimulation(w=" + width1...
+                            + ", I=" + amplitude1 + ...
                             ", f=" + frequency + ")");
                     
                     % Do not set stim patterns for the following values
-                    if amp == 0 || pulses == 0  || frequency < 16
+                    if width1 == 0 || pulses == 0  || frequency < 16
                         obj.doStim = cat(1,obj.doStim,false);
                         continue
                     else
@@ -111,13 +150,13 @@ classdef Cerestim < mladapter  % Cerestim Adapter Class
                                         
                     % Program our waveforms (stim patterns)
                     obj.Stimulator.setStimPattern('waveform',i,...% We can define multiple waveforms and distinguish them by ID
-                        'polarity',0,...% 0=CF, 1=AF
+                        'polarity',polarity,...% 0=CF, 1=AF
                         'pulses',pulses,...% Number of pulses in stim pattern
-                        'amp1',amp,...% Amplitude of first phase in uA
-                        'amp2',amp,...% Amplitude of second phase in uA
-                        'width1',170,...% Width for first phase in us
-                        'width2',170,...% Width for second phase in us
-                        'interphase',60,...% Time between phases in us
+                        'amp1',amplitude1,...% Amplitude of first phase in uA
+                        'amp2',amplitude2,...% Amplitude of second phase in uA
+                        'width1',width1,...% Width for first phase in us
+                        'width2',width2,...% Width for second phase in us
+                        'interphase',100,...% Time between phases in us
                         'frequency',frequency);% Frequency determines time between biphasic pulses                        
                 end                
             else
